@@ -15,6 +15,7 @@ use EslamRedaDiv\FilamentCopilot\Services\ExportService;
 use EslamRedaDiv\FilamentCopilot\Services\RateLimitService;
 use EslamRedaDiv\FilamentCopilot\Services\ToolRegistry;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -35,6 +36,8 @@ class CopilotChat extends Component
     public ?string $pendingToolCallId = null;
 
     public ?array $pendingQuestion = null;
+
+    public ?array $pendingConfirmation = null;
 
     public array $conversations = [];
 
@@ -189,7 +192,32 @@ class CopilotChat extends Component
             'content' => $content,
         ];
 
-        $this->checkForAskUserResponse($content);
+        // Check tool results for confirmation_required or ask_user
+        // (SSE events handle these immediately, but also check here for non-streaming fallback)
+        if ($toolCalls && ! $this->pendingConfirmation && ! $this->pendingQuestion) {
+            foreach ($toolCalls as $toolCall) {
+                $result = $toolCall['result'] ?? null;
+                if (! is_string($result)) {
+                    continue;
+                }
+                $decoded = json_decode($result, true);
+                if (! is_array($decoded)) {
+                    continue;
+                }
+                $type = $decoded['type'] ?? null;
+                if ($type === 'confirmation_required' && ! $this->pendingConfirmation) {
+                    $this->pendingConfirmation = $decoded;
+                } elseif ($type === 'ask_user' && ! $this->pendingQuestion) {
+                    $this->pendingQuestion = $decoded;
+                }
+            }
+        }
+
+        // Only check response text for ask_user if no pending interactions
+        if (! $this->pendingConfirmation && ! $this->pendingQuestion) {
+            $this->checkForAskUserResponse($content);
+        }
+
         $this->checkForPendingPlans();
         $this->loadConversations();
     }
@@ -365,6 +393,77 @@ class CopilotChat extends Component
         $this->sendMessage();
     }
 
+    /**
+     * Called from JavaScript when a confirmation_required SSE event is received.
+     */
+    #[On('copilot-confirmation-required')]
+    public function handleConfirmationRequired(string $confirmationKey, string $toolName, string $toolClass, string $sourceClass, string $description): void
+    {
+        $this->pendingConfirmation = [
+            'confirmation_key' => $confirmationKey,
+            'tool_name' => $toolName,
+            'tool_class' => $toolClass,
+            'source_class' => $sourceClass,
+            'description' => $description,
+        ];
+    }
+
+    /**
+     * Called from JavaScript when an ask_user SSE event is received.
+     */
+    #[On('copilot-ask-user')]
+    public function handleAskUser(string $question, array $options = [], ?string $context = null): void
+    {
+        $this->pendingQuestion = [
+            'type' => 'ask_user',
+            'question' => $question,
+            'options' => $options,
+            'context' => $context,
+        ];
+    }
+
+    /**
+     * Approve execution of a tool that requires confirmation.
+     */
+    public function approveConfirmation(): void
+    {
+        if (! $this->pendingConfirmation) {
+            return;
+        }
+
+        $key = $this->pendingConfirmation['confirmation_key'] ?? null;
+        $toolName = $this->pendingConfirmation['tool_name'] ?? 'this tool';
+
+        if ($key) {
+            Cache::put($key, 'approved', now()->addMinutes(5));
+        }
+
+        $this->pendingConfirmation = null;
+        $this->message = 'I approve running ' . $toolName . '. Please proceed.';
+        $this->sendMessage();
+    }
+
+    /**
+     * Reject execution of a tool that requires confirmation.
+     */
+    public function rejectConfirmation(): void
+    {
+        if (! $this->pendingConfirmation) {
+            return;
+        }
+
+        $key = $this->pendingConfirmation['confirmation_key'] ?? null;
+        $toolName = $this->pendingConfirmation['tool_name'] ?? 'this tool';
+
+        if ($key) {
+            Cache::forget($key);
+        }
+
+        $this->pendingConfirmation = null;
+        $this->message = 'I do NOT approve running ' . $toolName . '. Please do not execute it.';
+        $this->sendMessage();
+    }
+
     protected function getConversationMessages($conversation): array
     {
         /** @var ConversationManager $conversationManager */
@@ -380,6 +479,7 @@ class CopilotChat extends Component
         $this->pendingPlan = null;
         $this->pendingToolCallId = null;
         $this->pendingQuestion = null;
+        $this->pendingConfirmation = null;
         $this->dispatch('copilot-conversation-changed', conversationId: null);
     }
 

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot;
 
 use EslamRedaDiv\FilamentCopilot\Commands\InstallCommand;
+use EslamRedaDiv\FilamentCopilot\Commands\MakeCopilotToolCommand;
 use EslamRedaDiv\FilamentCopilot\Livewire\ConversationSidebar;
 use EslamRedaDiv\FilamentCopilot\Livewire\CopilotButton;
 use EslamRedaDiv\FilamentCopilot\Livewire\CopilotChat;
-use EslamRedaDiv\FilamentCopilot\Macros\MacroRegistrar;
 use EslamRedaDiv\FilamentCopilot\Services\ConversationManager;
 use EslamRedaDiv\FilamentCopilot\Services\ExportService;
 use EslamRedaDiv\FilamentCopilot\Services\RateLimitService;
@@ -32,7 +32,8 @@ class FilamentCopilotServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasRoute('web')
             ->discoversMigrations()
-            ->hasCommand(InstallCommand::class);
+            ->hasCommand(InstallCommand::class)
+            ->hasCommand(MakeCopilotToolCommand::class);
     }
 
     public function packageRegistered(): void
@@ -45,8 +46,6 @@ class FilamentCopilotServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        (new MacroRegistrar)->register();
-
         FilamentAsset::register([
             Css::make('filament-copilot', __DIR__ . '/../resources/dist/filament-copilot.css'),
             Js::make('filament-copilot', __DIR__ . '/../resources/dist/filament-copilot.js'),

@@ -156,10 +156,31 @@ class StreamController
                             'error' => $event->error,
                         ]);
 
-                        // Detect navigation tool results and emit a navigate event
+                        // Detect special tool result types and emit dedicated SSE events
                         $decoded = json_decode($rawResult, true);
-                        if (is_array($decoded) && ($decoded['__navigate'] ?? false) && ! empty($decoded['url'])) {
-                            $this->sendSseEvent('navigate', ['url' => $decoded['url']]);
+                        if (is_array($decoded)) {
+                            $type = $decoded['type'] ?? null;
+
+                            if ($type === 'confirmation_required') {
+                                $this->sendSseEvent('confirmation_required', [
+                                    'confirmation_key' => $decoded['confirmation_key'] ?? '',
+                                    'tool_name' => $decoded['tool_name'] ?? '',
+                                    'tool_class' => $decoded['tool_class'] ?? '',
+                                    'source_class' => $decoded['source_class'] ?? '',
+                                    'description' => $decoded['description'] ?? '',
+                                ]);
+                            } elseif ($type === 'ask_user') {
+                                $this->sendSseEvent('ask_user', [
+                                    'question' => $decoded['question'] ?? '',
+                                    'options' => $decoded['options'] ?? [],
+                                    'context' => $decoded['context'] ?? null,
+                                ]);
+                            }
+
+                            // Detect navigation tool results
+                            if (($decoded['__navigate'] ?? false) && ! empty($decoded['url'])) {
+                                $this->sendSseEvent('navigate', ['url' => $decoded['url']]);
+                            }
                         }
                     } elseif ($event instanceof \Laravel\Ai\Streaming\Events\StreamEnd) {
                         $usage = $event->usage;

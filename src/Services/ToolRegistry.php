@@ -7,28 +7,14 @@ namespace EslamRedaDiv\FilamentCopilot\Services;
 use EslamRedaDiv\FilamentCopilot\Tools\AskUserTool;
 use EslamRedaDiv\FilamentCopilot\Tools\BaseTool;
 use EslamRedaDiv\FilamentCopilot\Tools\CreatePlanTool;
-use EslamRedaDiv\FilamentCopilot\Tools\CreateRecordTool;
-use EslamRedaDiv\FilamentCopilot\Tools\DeleteRecordTool;
-use EslamRedaDiv\FilamentCopilot\Tools\ExecuteActionTool;
-use EslamRedaDiv\FilamentCopilot\Tools\ExecuteBulkActionTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ExportConversationTool;
-use EslamRedaDiv\FilamentCopilot\Tools\FillFormTool;
-use EslamRedaDiv\FilamentCopilot\Tools\FilterRecordsTool;
-use EslamRedaDiv\FilamentCopilot\Tools\GetCurrentPageTool;
-use EslamRedaDiv\FilamentCopilot\Tools\GetFormDataTool;
-use EslamRedaDiv\FilamentCopilot\Tools\GetRecordTool;
-use EslamRedaDiv\FilamentCopilot\Tools\GetSchemaInfoTool;
-use EslamRedaDiv\FilamentCopilot\Tools\GetWidgetDataTool;
-use EslamRedaDiv\FilamentCopilot\Tools\ListRecordsTool;
+use EslamRedaDiv\FilamentCopilot\Tools\GetToolsTool;
+use EslamRedaDiv\FilamentCopilot\Tools\ListPagesTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ListResourcesTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ListWidgetsTool;
-use EslamRedaDiv\FilamentCopilot\Tools\NavigateToPageTool;
-use EslamRedaDiv\FilamentCopilot\Tools\ReadInfolistTool;
 use EslamRedaDiv\FilamentCopilot\Tools\RecallTool;
 use EslamRedaDiv\FilamentCopilot\Tools\RememberTool;
-use EslamRedaDiv\FilamentCopilot\Tools\SearchRecordsTool;
-use EslamRedaDiv\FilamentCopilot\Tools\SortRecordsTool;
-use EslamRedaDiv\FilamentCopilot\Tools\UpdateRecordTool;
+use EslamRedaDiv\FilamentCopilot\Tools\RunToolTool;
 use Illuminate\Database\Eloquent\Model;
 
 class ToolRegistry
@@ -36,30 +22,19 @@ class ToolRegistry
     protected array $globalTools = [];
 
     protected array $toolClasses = [
-        ListRecordsTool::class,
-        GetRecordTool::class,
-        SearchRecordsTool::class,
-        FilterRecordsTool::class,
-        SortRecordsTool::class,
-        CreateRecordTool::class,
-        UpdateRecordTool::class,
-        DeleteRecordTool::class,
-        FillFormTool::class,
-        GetFormDataTool::class,
-        ExecuteActionTool::class,
-        ExecuteBulkActionTool::class,
-        NavigateToPageTool::class,
-        GetCurrentPageTool::class,
-        GetWidgetDataTool::class,
+        // Discovery
+        ListResourcesTool::class,
+        ListPagesTool::class,
+        ListWidgetsTool::class,
+        GetToolsTool::class,
+        RunToolTool::class,
+        // Memory
         RememberTool::class,
         RecallTool::class,
-        GetSchemaInfoTool::class,
-        ExportConversationTool::class,
+        // Utility
         AskUserTool::class,
         CreatePlanTool::class,
-        ReadInfolistTool::class,
-        ListWidgetsTool::class,
-        ListResourcesTool::class,
+        ExportConversationTool::class,
     ];
 
     /**
@@ -77,7 +52,7 @@ class ToolRegistry
     {
         $tools = [];
 
-        foreach ($this->toolClasses as $toolClass) {
+        foreach (array_merge($this->toolClasses, $this->globalTools) as $toolClass) {
             $tool = app($toolClass);
 
             if ($tool instanceof BaseTool) {
@@ -86,23 +61,7 @@ class ToolRegistry
                     ->forTenant($tenant);
             }
 
-            if ($conversationId && $tool instanceof CreatePlanTool) {
-                $tool->forConversation($conversationId);
-            }
-
-            $tools[] = $tool;
-        }
-
-        foreach ($this->globalTools as $toolClass) {
-            $tool = app($toolClass);
-
-            if ($tool instanceof BaseTool) {
-                $tool->forPanel($panelId)
-                    ->forUser($user)
-                    ->forTenant($tenant);
-            }
-
-            if ($conversationId && $tool instanceof CreatePlanTool) {
+            if ($conversationId && $tool instanceof BaseTool) {
                 $tool->forConversation($conversationId);
             }
 

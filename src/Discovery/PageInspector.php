@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Discovery;
 
-use EslamRedaDiv\FilamentCopilot\Concerns\HasCopilotPageContext;
+use EslamRedaDiv\FilamentCopilot\Contracts\CopilotPage;
 use Filament\Facades\Filament;
 
 class PageInspector
 {
     /**
-     * Discover all pages in the current panel.
+     * Discover all pages in the panel that implement CopilotPage.
      */
     public function discoverPages(?string $panelId = null): array
     {
@@ -25,43 +25,52 @@ class PageInspector
         $pages = [];
 
         foreach ($panel->getPages() as $pageClass) {
-            $pageData = [
+            if (! is_subclass_of($pageClass, CopilotPage::class)) {
+                continue;
+            }
+
+            $hasTools = false;
+            try {
+                $description = $pageClass::copilotPageDescription();
+                $hasTools = ! empty($pageClass::copilotTools());
+            } catch (\Throwable) {
+                $description = null;
+            }
+
+            $pages[] = [
                 'page' => $pageClass,
                 'label' => $pageClass::getNavigationLabel(),
                 'slug' => $pageClass::getSlug(),
-                'url' => $pageClass::getUrl(),
+                'copilot_description' => $description,
+                'has_tools' => $hasTools,
             ];
-
-            if (in_array(HasCopilotPageContext::class, class_uses_recursive($pageClass))) {
-                $instance = app($pageClass);
-                $pageData['copilot_description'] = $instance->copilotPageDescription();
-                $pageData['copilot_tools'] = $instance->copilotTools();
-            }
-
-            $pages[] = $pageData;
         }
 
         return $pages;
     }
 
     /**
-     * Build AI-friendly page descriptions.
+     * Build AI-friendly page descriptions for the system prompt.
      */
     public function buildPageContext(?string $panelId = null): string
     {
         $pages = $this->discoverPages($panelId);
 
         if (empty($pages)) {
-            return 'No pages available.';
+            return '';
         }
 
-        $lines = ['Available Pages:'];
+        $lines = ['## Available Pages'];
 
         foreach ($pages as $page) {
-            $line = "- {$page['label']} (/{$page['slug']})";
+            $line = '- ' . $page['label'] . ' (' . $page['page'] . ')';
 
             if (! empty($page['copilot_description'])) {
-                $line .= " — {$page['copilot_description']}";
+                $line .= ': ' . $page['copilot_description'];
+            }
+
+            if ($page['has_tools']) {
+                $line .= ' [has copilot tools]';
             }
 
             $lines[] = $line;

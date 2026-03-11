@@ -1,7 +1,6 @@
 <?php
 
 use EslamRedaDiv\FilamentCopilot\Enums\AuditAction;
-use EslamRedaDiv\FilamentCopilot\Enums\CapabilityType;
 use EslamRedaDiv\FilamentCopilot\Enums\MessageRole;
 use EslamRedaDiv\FilamentCopilot\Enums\PlanStatus;
 use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
@@ -33,14 +32,10 @@ it('has correct ToolCallStatus cases', function () {
         ->and(ToolCallStatus::Failed->value)->toBe('failed');
 });
 
-it('has correct CapabilityType cases', function () {
-    expect(CapabilityType::cases())->toHaveCount(9);
-});
-
 it('has all required AuditAction cases', function () {
     $actions = AuditAction::cases();
 
-    expect($actions)->toHaveCount(28)
+    expect($actions)->toHaveCount(30)
         ->and(AuditAction::MessageSent->value)->toBe('message_sent')
         ->and(AuditAction::RecordCreated->value)->toBe('record_created')
         ->and(AuditAction::RateLimitHit->value)->toBe('rate_limit_hit');

@@ -20,6 +20,8 @@ enum AuditAction: string
     case RecordUpdated = 'record_updated';
     case RecordCreated = 'record_created';
     case RecordDeleted = 'record_deleted';
+    case RecordRestored = 'record_restored';
+    case RecordForceDeleted = 'record_force_deleted';
     case FormFilled = 'form_filled';
     case FormSaved = 'form_saved';
     case ActionExecuted = 'action_executed';

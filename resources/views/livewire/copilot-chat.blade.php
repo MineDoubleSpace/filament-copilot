@@ -203,6 +203,22 @@
                                 }
                                 this.$nextTick(() => this.scrollToBottom());
                                 break;
+                                case 'confirmation_required':
+                                    $wire.dispatchSelf('copilot-confirmation-required', {
+                                        confirmationKey: data.confirmation_key,
+                                        toolName: data.tool_name,
+                                        toolClass: data.tool_class,
+                                        sourceClass: data.source_class,
+                                        description: data.description,
+                                    });
+                                    break;
+                                case 'ask_user':
+                                    $wire.dispatchSelf('copilot-ask-user', {
+                                        question: data.question,
+                                        options: data.options || [],
+                                        context: data.context || null,
+                                    });
+                                    break;
                                 case 'navigate':
                                     // Queue navigation URL to execute after stream completes
                                     this._pendingNavigateUrl = data.url;
@@ -623,14 +639,14 @@
             </div>
         </div>
 
-        {{-- AskUser / Human-in-the-loop Approval Dialog --}}
+        {{-- AskUser / Human-in-the-loop Question Dialog --}}
         @if ($pendingQuestion)
             <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
                 <div
                     class="rounded-xl border border-info-200 dark:border-info-800 bg-info-50 dark:bg-info-900/10 overflow-hidden">
                     <div
                         class="flex items-center gap-2 px-3 py-2 bg-info-100 dark:bg-info-900/20 border-b border-info-200 dark:border-info-800">
-                        <x-filament::icon icon="heroicon-o-shield-check"
+                        <x-filament::icon icon="heroicon-o-question-mark-circle"
                             class="w-4 h-4 text-info-600 dark:text-info-400 shrink-0" />
                         <span class="text-xs font-semibold text-info-800 dark:text-info-200">
                             {{ __('filament-copilot::filament-copilot.user_approval_required') }}
@@ -647,12 +663,94 @@
                         @endif
                     </div>
                     <div
-                        class="flex items-center justify-end gap-2 px-3 py-2 border-t border-info-200 dark:border-info-800 bg-info-50/50 dark:bg-info-900/5">
-                        <x-filament::button wire:click="respondToQuestion('cancel')" wire:loading.attr="disabled"
+                        class="flex items-center justify-end gap-2 px-3 py-2 border-t border-info-200 dark:border-info-800 bg-info-50/50 dark:bg-info-900/5 flex-wrap">
+                        @if (!empty($pendingQuestion['options']))
+                            {{-- Render each option as a separate button --}}
+                            @foreach ($pendingQuestion['options'] as $option)
+                                <x-filament::button
+                                    wire:click="respondToQuestion('{{ str_replace("'", "\\'", $option) }}')"
+                                    wire:loading.attr="disabled" color="primary" size="xs">
+                                    <span wire:loading.remove
+                                        wire:target="respondToQuestion">{{ $option }}</span>
+                                    <span wire:loading wire:target="respondToQuestion"
+                                        class="flex items-center gap-1">
+                                        <svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                            </path>
+                                        </svg>
+                                    </span>
+                                </x-filament::button>
+                            @endforeach
+                        @else
+                            {{-- Fallback: Cancel / Approve --}}
+                            <x-filament::button wire:click="respondToQuestion('cancel')" wire:loading.attr="disabled"
+                                color="gray" size="xs">
+                                <span wire:loading.remove
+                                    wire:target="respondToQuestion">{{ __('filament-copilot::filament-copilot.cancel') }}</span>
+                                <span wire:loading wire:target="respondToQuestion" class="flex items-center gap-1">
+                                    <svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                </span>
+                            </x-filament::button>
+                            <x-filament::button wire:click="respondToQuestion('approve')" wire:loading.attr="disabled"
+                                color="primary" size="xs">
+                                <span wire:loading.remove
+                                    wire:target="respondToQuestion">{{ __('filament-copilot::filament-copilot.approve') }}</span>
+                                <span wire:loading wire:target="respondToQuestion" class="flex items-center gap-1">
+                                    <svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                </span>
+                            </x-filament::button>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Tool Confirmation Dialog --}}
+        @if ($pendingConfirmation)
+            <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
+                <div
+                    class="rounded-xl border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-900/10 overflow-hidden">
+                    <div
+                        class="flex items-center gap-2 px-3 py-2 bg-warning-100 dark:bg-warning-900/20 border-b border-warning-200 dark:border-warning-800">
+                        <x-filament::icon icon="heroicon-o-shield-check"
+                            class="w-4 h-4 text-warning-600 dark:text-warning-400 shrink-0" />
+                        <span class="text-xs font-semibold text-warning-800 dark:text-warning-200">
+                            {{ __('filament-copilot::filament-copilot.user_approval_required') }}
+                        </span>
+                    </div>
+                    <div class="px-3 py-2.5">
+                        <p class="text-sm font-medium text-warning-900 dark:text-warning-100 break-words">
+                            {{ $pendingConfirmation['tool_name'] ?? 'Tool' }}
+                        </p>
+                        <p class="text-xs text-warning-700 dark:text-warning-300 mt-1 break-words">
+                            {{ $pendingConfirmation['description'] ?? '' }}
+                        </p>
+                    </div>
+                    <div
+                        class="flex items-center justify-end gap-2 px-3 py-2 border-t border-warning-200 dark:border-warning-800 bg-warning-50/50 dark:bg-warning-900/5">
+                        <x-filament::button wire:click="rejectConfirmation" wire:loading.attr="disabled"
                             color="gray" size="xs">
                             <span wire:loading.remove
-                                wire:target="respondToQuestion">{{ __('filament-copilot::filament-copilot.cancel') }}</span>
-                            <span wire:loading wire:target="respondToQuestion" class="flex items-center gap-1">
+                                wire:target="rejectConfirmation">{{ __('filament-copilot::filament-copilot.cancel') }}</span>
+                            <span wire:loading wire:target="rejectConfirmation" class="flex items-center gap-1">
                                 <svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none"
                                     viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"
@@ -663,11 +761,11 @@
                                 </svg>
                             </span>
                         </x-filament::button>
-                        <x-filament::button wire:click="respondToQuestion('approve')" wire:loading.attr="disabled"
+                        <x-filament::button wire:click="approveConfirmation" wire:loading.attr="disabled"
                             color="primary" size="xs">
                             <span wire:loading.remove
-                                wire:target="respondToQuestion">{{ __('filament-copilot::filament-copilot.approve') }}</span>
-                            <span wire:loading wire:target="respondToQuestion" class="flex items-center gap-1">
+                                wire:target="approveConfirmation">{{ __('filament-copilot::filament-copilot.approve') }}</span>
+                            <span wire:loading wire:target="approveConfirmation" class="flex items-center gap-1">
                                 <svg class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none"
                                     viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"

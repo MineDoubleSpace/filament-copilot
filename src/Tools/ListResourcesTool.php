@@ -17,7 +17,7 @@ class ListResourcesTool extends BaseTool
 
     public function description(): Stringable|string
     {
-        return 'List all available resources in the current panel with their descriptions, slugs, and available capabilities.';
+        return 'List all available resources in the current panel with their descriptions. Use get_tools with a resource class to discover its copilot tools.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -36,23 +36,14 @@ class ListResourcesTool extends BaseTool
         $lines = ['Available Resources:', ''];
 
         foreach ($resources as $resource) {
-            $line = "- {$resource['plural_label']} (slug: {$resource['slug']})";
-            $line .= " | Model: {$resource['model']}";
+            $line = '- ' . $resource['plural_label'] . ' (' . $resource['resource'] . ')';
 
-            if ($resource['can_create'] ?? false) {
-                $line .= ' | Can create';
+            if (! empty($resource['copilot_description'])) {
+                $line .= '  ' . $resource['copilot_description'];
             }
 
-            if ($resource['has_copilot_trait'] ?? false) {
-                $line .= ' | Copilot-enabled';
-
-                if (! empty($resource['copilot_readable_fields'])) {
-                    $line .= ' | Readable: '.implode(', ', $resource['copilot_readable_fields']);
-                }
-
-                if (! empty($resource['copilot_writable_fields'])) {
-                    $line .= ' | Writable: '.implode(', ', $resource['copilot_writable_fields']);
-                }
+            if (! empty($resource['has_tools'])) {
+                $line .= ' [has copilot tools]';
             }
 
             $lines[] = $line;

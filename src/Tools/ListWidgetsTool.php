@@ -17,7 +17,7 @@ class ListWidgetsTool extends BaseTool
 
     public function description(): Stringable|string
     {
-        return 'List all available dashboard widgets in the current panel with their descriptions and data availability.';
+        return 'List all available widgets in the current panel with their descriptions. Use get_tools with a widget class to discover its copilot tools.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -36,18 +36,14 @@ class ListWidgetsTool extends BaseTool
         $lines = ['Available Widgets:', ''];
 
         foreach ($widgets as $widget) {
-            $line = "- {$widget['name']}";
+            $line = '- ' . $widget['name'] . ' (' . $widget['widget'] . ')';
 
             if (! empty($widget['description'])) {
-                $line .= ": {$widget['description']}";
+                $line .= '  ' . $widget['description'];
             }
 
-            if ($widget['exposes_data'] ?? false) {
-                $line .= ' [data available]';
-            }
-
-            if ($widget['has_copilot_trait'] ?? false) {
-                $line .= ' [copilot-enabled]';
+            if (! empty($widget['has_tools'])) {
+                $line .= ' [has copilot tools]';
             }
 
             $lines[] = $line;
