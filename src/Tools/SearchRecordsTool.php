@@ -44,6 +44,15 @@ class SearchRecordsTool extends BaseTool
 
         $query = $modelClass::query();
 
+        // Eager-load relationships and counts from table columns
+        [$relations, $withCounts] = $this->resolveEagerLoads($resourceClass);
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+        if (! empty($withCounts)) {
+            $query->withCount($withCounts);
+        }
+
         // Use model's searchable columns if available
         $fillable = (new $modelClass)->getFillable();
         $stringColumns = array_filter($fillable, fn ($col) => ! str_ends_with($col, '_id') && ! in_array($col, ['password', 'remember_token']));
@@ -70,25 +79,9 @@ class SearchRecordsTool extends BaseTool
         $lines = ["Search results for '{$searchTerm}' in {$resourceClass::getPluralModelLabel()} ({$records->count()} found):", ''];
 
         foreach ($records as $record) {
-            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record);
+            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record, $resourceClass);
         }
 
         return implode("\n", $lines);
-    }
-
-    protected function summarizeRecord($record): string
-    {
-        $attributes = $record->toArray();
-        $summary = [];
-
-        foreach (array_slice($attributes, 0, 5) as $key => $value) {
-            if (is_array($value) || is_null($value)) {
-                continue;
-            }
-            $display = is_string($value) ? mb_substr((string) $value, 0, 50) : $value;
-            $summary[] = "{$key}: {$display}";
-        }
-
-        return implode(', ', $summary);
     }
 }

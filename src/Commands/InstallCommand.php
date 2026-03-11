@@ -26,7 +26,7 @@ class InstallCommand extends Command
         $this->newLine(2);
 
         // Step 1
-        $this->section('Step 1/7 — Publishing configuration');
+        $this->section('Step 1/9 — Publishing configuration');
 
         $this->line('⏳ Publishing config file...');
         $this->callSilently('vendor:publish', [
@@ -37,7 +37,7 @@ class InstallCommand extends Command
         $this->info('✓ Config file published to config/filament-copilot.php');
 
         // Step 2
-        $this->section('Step 2/7 — Database setup');
+        $this->section('Step 2/9 — Database setup');
 
         $this->line('⏳ Publishing migration files...');
         $this->callSilently('vendor:publish', [
@@ -62,7 +62,7 @@ class InstallCommand extends Command
         }
 
         // Step 3
-        $this->section('Step 3/7 — Laravel AI SDK Configuration');
+        $this->section('Step 3/9 — Laravel AI SDK Configuration');
 
         $this->line('Filament Copilot uses the official laravel/ai SDK.');
         $this->line('Let\'s configure your AI provider.');
@@ -85,7 +85,7 @@ class InstallCommand extends Command
         }
 
         // Step 4
-        $this->section('Step 4/7 — Choose your AI provider');
+        $this->section('Step 4/9 — Choose your AI provider');
 
         $providers = [
             'openai' => 'OpenAI',
@@ -133,7 +133,7 @@ class InstallCommand extends Command
         ];
 
         // Step 5
-        $this->section('Step 5/7 — Choose your AI model');
+        $this->section('Step 5/9 — Choose your AI model');
 
         $this->line("Popular models for {$provider}:");
         $this->newLine();
@@ -160,7 +160,7 @@ class InstallCommand extends Command
         }
 
         // Step 6
-        $this->section('Step 6/7 — API key configuration');
+        $this->section('Step 6/9 — API key configuration');
 
         $envKeyMap = [
             'openai' => 'OPENAI_API_KEY',
@@ -220,7 +220,40 @@ class InstallCommand extends Command
         }
 
         // Step 7
-        $this->section('Step 7/7 — Setup complete');
+        $this->section('Step 7/9 — User Model Setup');
+
+        $this->line('Add the HasCopilotChat trait to your user model(s) to enable chat history.');
+        $this->newLine();
+        $this->line('  <fg=cyan>use EslamRedaDiv\FilamentCopilot\Concerns\HasCopilotChat;</>');
+        $this->newLine();
+        $this->line('  <fg=cyan>class User extends Authenticatable</>');
+        $this->line('  <fg=cyan>{</>');
+        $this->line('  <fg=cyan>    use HasCopilotChat;</>');
+        $this->line('  <fg=cyan>}</>');
+        $this->newLine();
+        $this->warn('⚠ Add this trait to every authenticatable model that will use Filament Copilot (e.g., User, Admin).');
+
+        // Step 8
+        $this->section('Step 8/9 — Register Plugin in Panel Provider');
+
+        $this->line('Register the plugin in your Filament panel provider(s):');
+        $this->newLine();
+        $this->line('  <fg=cyan>use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;</>');
+        $this->newLine();
+        $this->line('  <fg=cyan>public function panel(Panel $panel): Panel</>');
+        $this->line('  <fg=cyan>{</>');
+        $this->line('  <fg=cyan>    return $panel</>');
+        $this->line('  <fg=cyan>        ->plugins([</>');
+        $this->line('  <fg=cyan>            FilamentCopilotPlugin::make()</>');
+        $this->line('  <fg=cyan>                ->planning()</>');
+        $this->line('  <fg=cyan>                ->shouldApprovePlan(),</>');
+        $this->line('  <fg=cyan>        ]);</>');
+        $this->line('  <fg=cyan>}</>');
+        $this->newLine();
+        $this->warn('⚠ Register the plugin in each panel where you want the AI copilot available.');
+
+        // Step 9
+        $this->section('Step 9/9 — Setup complete');
 
         $this->table(
             ['Setting', 'Value'],

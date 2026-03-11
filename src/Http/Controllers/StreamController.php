@@ -27,13 +27,20 @@ class StreamController
             'panel_id' => ['required', 'string'],
         ]);
 
+        $panelId = $request->input('panel_id');
+
+        // Set up Filament panel context so the correct auth guard is used
+        try {
+            Filament::setCurrentPanel($panelId);
+        } catch (\Throwable) {
+            abort(Response::HTTP_NOT_FOUND);
+        }
+
         $user = Filament::auth()->user();
 
         if (! $user) {
             abort(Response::HTTP_UNAUTHORIZED);
         }
-
-        $panelId = $request->input('panel_id');
         $tenant = Filament::getTenant();
         $content = $request->input('message');
         $conversationId = $request->input('conversation_id');
@@ -82,7 +89,7 @@ class StreamController
                 $agent->forPanel($panelId)
                     ->forUser($user)
                     ->forTenant($tenant)
-                    ->withTools($toolRegistry->buildTools($panelId, $user, $tenant))
+                    ->withTools($toolRegistry->buildTools($panelId, $user, $tenant, $conversation->id))
                     ->withMessages($messages);
 
                 if (config('filament-copilot.agent.should_think', false)) {
@@ -120,6 +127,40 @@ class StreamController
                     if ($event instanceof \Laravel\Ai\Streaming\Events\TextDelta) {
                         $responseText .= $event->delta;
                         $this->sendSseEvent('chunk', ['text' => $event->delta]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ReasoningStart) {
+                        $this->sendSseEvent('thinking_start', ['reasoning_id' => $event->reasoningId]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ReasoningDelta) {
+                        $this->sendSseEvent('thinking_delta', [
+                            'delta' => $event->delta,
+                            'reasoning_id' => $event->reasoningId,
+                        ]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ReasoningEnd) {
+                        $this->sendSseEvent('thinking_end', [
+                            'reasoning_id' => $event->reasoningId,
+                            'summary' => $event->summary,
+                        ]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ToolCall) {
+                        $this->sendSseEvent('tool_call', [
+                            'tool_id' => $event->toolCall->id,
+                            'tool_name' => $event->toolCall->name,
+                            'arguments' => $event->toolCall->arguments,
+                        ]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ToolResult) {
+                        $rawResult = is_string($event->toolResult->result) ? $event->toolResult->result : json_encode($event->toolResult->result);
+
+                        $this->sendSseEvent('tool_result', [
+                            'tool_id' => $event->toolResult->id ?? '',
+                            'tool_name' => $event->toolResult->name ?? '',
+                            'result' => $rawResult,
+                            'success' => $event->successful,
+                            'error' => $event->error,
+                        ]);
+
+                        // Detect navigation tool results and emit a navigate event
+                        $decoded = json_decode($rawResult, true);
+                        if (is_array($decoded) && ($decoded['__navigate'] ?? false) && ! empty($decoded['url'])) {
+                            $this->sendSseEvent('navigate', ['url' => $decoded['url']]);
+                        }
                     } elseif ($event instanceof \Laravel\Ai\Streaming\Events\StreamEnd) {
                         $usage = $event->usage;
                     }

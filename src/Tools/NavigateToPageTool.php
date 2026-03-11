@@ -14,7 +14,7 @@ class NavigateToPageTool extends BaseTool
 {
     public function description(): Stringable|string
     {
-        return 'Navigate the user to a specific page or resource in the panel. Returns the URL for the frontend to navigate to.';
+        return 'Navigate the user to a specific page or resource in the panel. This will actually navigate the browser to the page.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -39,18 +39,32 @@ class NavigateToPageTool extends BaseTool
             ]);
         }
 
+        $url = $this->resolveUrl($page, $action, $recordId);
+
+        if ($url === null) {
+            return "Page or resource '{$page}' not found.";
+        }
+
+        // Return JSON with __navigate marker so the frontend can trigger real navigation
+        return json_encode([
+            '__navigate' => true,
+            'url' => $url,
+            'message' => "Navigating to: {$url}",
+        ], JSON_UNESCAPED_SLASHES);
+    }
+
+    protected function resolveUrl(string $page, string $action, ?string $recordId): ?string
+    {
         // Try to resolve as resource first
         $resourceClass = $this->resolveResource($page);
 
         if ($resourceClass) {
-            $url = match ($action) {
+            return match ($action) {
                 'create' => $resourceClass::getUrl('create'),
                 'view' => $recordId ? $resourceClass::getUrl('view', ['record' => $recordId]) : $resourceClass::getUrl(),
                 'edit' => $recordId ? $resourceClass::getUrl('edit', ['record' => $recordId]) : $resourceClass::getUrl(),
                 default => $resourceClass::getUrl(),
             };
-
-            return "Navigate to: {$url}";
         }
 
         // Try as a page
@@ -58,11 +72,11 @@ class NavigateToPageTool extends BaseTool
         if ($panel) {
             foreach ($panel->getPages() as $pageClass) {
                 if ($pageClass::getSlug() === $page) {
-                    return "Navigate to: {$pageClass::getUrl()}";
+                    return $pageClass::getUrl();
                 }
             }
         }
 
-        return "Page or resource '{$page}' not found.";
+        return null;
     }
 }

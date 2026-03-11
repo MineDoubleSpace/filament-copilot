@@ -155,10 +155,33 @@ class CopilotChat extends Component
      * Called from JavaScript after SSE streaming completes.
      */
     #[On('copilot-stream-complete')]
-    public function handleStreamComplete(string $content, ?string $newConversationId = null): void
+    public function handleStreamComplete(string $content, ?string $newConversationId = null, ?string $thinking = null, ?array $toolCalls = null): void
     {
         if ($newConversationId && ! $this->conversationId) {
             $this->conversationId = $newConversationId;
+        }
+
+        // Add thinking as a collapsible message if present
+        if ($thinking) {
+            $this->messages[] = [
+                'role' => 'thinking',
+                'content' => $thinking,
+            ];
+        }
+
+        // Add tool calls as collapsible messages
+        if ($toolCalls) {
+            foreach ($toolCalls as $toolCall) {
+                $this->messages[] = [
+                    'role' => 'tool_call',
+                    'tool_name' => $toolCall['name'] ?? 'Tool',
+                    'arguments' => $toolCall['arguments'] ?? null,
+                    'result' => $toolCall['result'] ?? null,
+                    'success' => $toolCall['status'] === 'done',
+                    'error' => $toolCall['error'] ?? null,
+                    'content' => $toolCall['result'] ?? '',
+                ];
+            }
         }
 
         $this->messages[] = [

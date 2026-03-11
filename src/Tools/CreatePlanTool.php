@@ -13,6 +13,15 @@ use Stringable;
 
 class CreatePlanTool extends BaseTool
 {
+    protected ?string $conversationId = null;
+
+    public function forConversation(string $conversationId): static
+    {
+        $this->conversationId = $conversationId;
+
+        return $this;
+    }
+
     public function description(): Stringable|string
     {
         return 'Create a multi-step execution plan for a complex task. The plan will be presented to the user for approval before any steps are executed. Use this when a task requires multiple coordinated actions.';
@@ -21,7 +30,6 @@ class CreatePlanTool extends BaseTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'conversation_id' => $schema->string()->description('The conversation ID to attach the plan to')->required(),
             'description' => $schema->string()->description('A clear description of what this plan will accomplish')->required(),
             'steps' => $schema->string()->description('JSON array of step objects, each with a "description" key explaining what the step does (e.g. [{"description":"Fetch all users"},{"description":"Export to CSV"}])')->required(),
         ];
@@ -29,9 +37,13 @@ class CreatePlanTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $conversationId = (string) $request['conversation_id'];
+        $conversationId = $this->conversationId;
         $description = (string) $request['description'];
         $stepsJson = (string) $request['steps'];
+
+        if (! $conversationId) {
+            return 'No active conversation context. Cannot create plan.';
+        }
 
         $conversation = CopilotConversation::find($conversationId);
 

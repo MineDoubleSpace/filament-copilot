@@ -25,14 +25,14 @@ class CopilotStatsOverview extends StatsOverviewWidget
             Stat::make(
                 __('filament-copilot::filament-copilot.tokens_today'),
                 number_format(
-                    CopilotTokenUsage::where('usage_date', $today)->sum('total_tokens')
+                    (int) CopilotTokenUsage::where('usage_date', $today)->sum('total_tokens')
                 ),
             )->icon('heroicon-o-calculator'),
 
             Stat::make(
                 __('filament-copilot::filament-copilot.tokens_this_month'),
                 number_format(
-                    CopilotTokenUsage::where('usage_date', '>=', now()->startOfMonth()->toDateString())->sum('total_tokens')
+                    (int) CopilotTokenUsage::where('usage_date', '>=', now()->startOfMonth()->toDateString())->sum('total_tokens')
                 ),
             )->icon('heroicon-o-chart-bar'),
 

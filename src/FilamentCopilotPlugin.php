@@ -19,6 +19,8 @@ class FilamentCopilotPlugin implements Plugin
 {
     protected bool $chatEnabled = true;
 
+    protected bool $chatHistoryEnabled = true;
+
     protected bool $managementEnabled = false;
 
     protected ?string $managementGuard = null;
@@ -48,6 +50,29 @@ class FilamentCopilotPlugin implements Plugin
 
     protected ?Closure $authorizeUsing = null;
 
+    protected ?bool $streamingEnabled = null;
+
+    protected ?int $streamingChunkSize = null;
+
+    protected ?bool $exportEnabled = null;
+
+    /** @var array<string>|null */
+    protected ?array $exportFormats = null;
+
+    protected ?bool $tokenBudgetEnabled = null;
+
+    protected ?int $dailyTokenBudget = null;
+
+    protected ?int $monthlyTokenBudget = null;
+
+    protected ?bool $rateLimitEnabled = null;
+
+    protected ?bool $memoryEnabled = null;
+
+    protected ?int $maxMemoriesPerUser = null;
+
+    protected ?bool $respectAuthorization = null;
+
     public static function make(): static
     {
         return app(static::class);
@@ -73,6 +98,18 @@ class FilamentCopilotPlugin implements Plugin
     public function isChatEnabled(): bool
     {
         return $this->chatEnabled && config('filament-copilot.chat.enabled', true);
+    }
+
+    public function chatHistoryEnabled(bool $enabled = true): static
+    {
+        $this->chatHistoryEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isChatHistoryEnabled(): bool
+    {
+        return $this->chatHistoryEnabled && config('filament-copilot.chat.enabled', true);
     }
 
     public function managementEnabled(bool $enabled = true): static
@@ -243,6 +280,138 @@ class FilamentCopilotPlugin implements Plugin
         return $this->authorizeUsing;
     }
 
+    public function streaming(bool $enabled = true): static
+    {
+        $this->streamingEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isStreamingEnabled(): bool
+    {
+        return $this->streamingEnabled ?? config('filament-copilot.streaming.enabled', true);
+    }
+
+    public function streamingChunkSize(int $size): static
+    {
+        $this->streamingChunkSize = $size;
+
+        return $this;
+    }
+
+    public function getStreamingChunkSize(): int
+    {
+        return $this->streamingChunkSize ?? config('filament-copilot.streaming.chunk_size', 20);
+    }
+
+    public function exportEnabled(bool $enabled = true): static
+    {
+        $this->exportEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isExportEnabled(): bool
+    {
+        return $this->exportEnabled ?? config('filament-copilot.export.enabled', true);
+    }
+
+    public function exportFormats(array $formats): static
+    {
+        $this->exportFormats = $formats;
+
+        return $this;
+    }
+
+    public function getExportFormats(): array
+    {
+        return $this->exportFormats ?? config('filament-copilot.export.formats', ['markdown']);
+    }
+
+    public function tokenBudgetEnabled(bool $enabled = true): static
+    {
+        $this->tokenBudgetEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isTokenBudgetEnabled(): bool
+    {
+        return $this->tokenBudgetEnabled ?? config('filament-copilot.token_budget.enabled', false);
+    }
+
+    public function dailyTokenBudget(?int $budget): static
+    {
+        $this->dailyTokenBudget = $budget;
+
+        return $this;
+    }
+
+    public function getDailyTokenBudget(): ?int
+    {
+        return $this->dailyTokenBudget ?? config('filament-copilot.token_budget.daily_budget');
+    }
+
+    public function monthlyTokenBudget(?int $budget): static
+    {
+        $this->monthlyTokenBudget = $budget;
+
+        return $this;
+    }
+
+    public function getMonthlyTokenBudget(): ?int
+    {
+        return $this->monthlyTokenBudget ?? config('filament-copilot.token_budget.monthly_budget');
+    }
+
+    public function rateLimitEnabled(bool $enabled = true): static
+    {
+        $this->rateLimitEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isRateLimitEnabled(): bool
+    {
+        return $this->rateLimitEnabled ?? config('filament-copilot.rate_limits.enabled', false);
+    }
+
+    public function memoryEnabled(bool $enabled = true): static
+    {
+        $this->memoryEnabled = $enabled;
+
+        return $this;
+    }
+
+    public function isMemoryEnabled(): bool
+    {
+        return $this->memoryEnabled ?? config('filament-copilot.memory.enabled', true);
+    }
+
+    public function maxMemoriesPerUser(int $max): static
+    {
+        $this->maxMemoriesPerUser = $max;
+
+        return $this;
+    }
+
+    public function getMaxMemoriesPerUser(): int
+    {
+        return $this->maxMemoriesPerUser ?? config('filament-copilot.memory.max_memories_per_user', 100);
+    }
+
+    public function respectAuthorization(bool $respect = true): static
+    {
+        $this->respectAuthorization = $respect;
+
+        return $this;
+    }
+
+    public function shouldRespectAuthorization(): bool
+    {
+        return $this->respectAuthorization ?? config('filament-copilot.respect_authorization', true);
+    }
+
     public function register(Panel $panel): void
     {
         if ($this->managementEnabled) {
@@ -261,10 +430,19 @@ class FilamentCopilotPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         if ($this->isChatEnabled()) {
+            // Place the trigger button in the top bar next to global search
+            FilamentView::registerRenderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn (): string => auth()->check()
+                    ? Blade::render('@livewire(\'filament-copilot-button\')')
+                    : '',
+            );
+
+            // Place the chat modal at the end of the body
             FilamentView::registerRenderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => auth()->check()
-                    ? Blade::render('@livewire(\'filament-copilot-chat\') @livewire(\'filament-copilot-button\')')
+                    ? Blade::render('@livewire(\'filament-copilot-chat\')')
                     : '',
             );
         }

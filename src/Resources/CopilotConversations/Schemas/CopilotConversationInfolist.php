@@ -37,7 +37,7 @@ class CopilotConversationInfolist
                                 TextEntry::make('role')
                                     ->label(__('filament-copilot::filament-copilot.role'))
                                     ->badge()
-                                    ->color(fn (string $state): string => match ($state) {
+                                    ->color(fn ($state): string => match ($state?->value ?? $state) {
                                         'user' => 'info',
                                         'assistant' => 'success',
                                         'system' => 'warning',
@@ -49,9 +49,15 @@ class CopilotConversationInfolist
                                     ->markdown()
                                     ->columnSpanFull(),
                                 TextEntry::make('input_tokens')
-                                    ->label(__('filament-copilot::filament-copilot.input_tokens')),
+                                    ->label(__('filament-copilot::filament-copilot.input_tokens'))
+                                    ->numeric()
+                                    ->placeholder('—')
+                                    ->visible(fn ($record): bool => $record->input_tokens !== null),
                                 TextEntry::make('output_tokens')
-                                    ->label(__('filament-copilot::filament-copilot.output_tokens')),
+                                    ->label(__('filament-copilot::filament-copilot.output_tokens'))
+                                    ->numeric()
+                                    ->placeholder('—')
+                                    ->visible(fn ($record): bool => $record->output_tokens !== null),
                                 TextEntry::make('created_at')
                                     ->label(__('filament-copilot::filament-copilot.time'))
                                     ->dateTime(),

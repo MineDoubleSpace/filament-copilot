@@ -2,6 +2,7 @@
 
 use EslamRedaDiv\FilamentCopilot\Tools\AskUserTool;
 use EslamRedaDiv\FilamentCopilot\Tools\CreatePlanTool;
+use EslamRedaDiv\FilamentCopilot\Tools\ExecuteBulkActionTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ListResourcesTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ListWidgetsTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ReadInfolistTool;
@@ -115,6 +116,29 @@ it('ListResourcesTool has proper description', function () {
 
 it('ListResourcesTool has empty schema', function () {
     $tool = app(ListResourcesTool::class);
+
+    expect(method_exists($tool, 'schema'))->toBeTrue();
+
+    $reflection = new ReflectionMethod($tool, 'schema');
+    expect($reflection->getNumberOfParameters())->toBe(1);
+});
+
+it('ExecuteBulkActionTool implements Tool contract', function () {
+    $tool = new ExecuteBulkActionTool;
+
+    expect($tool)->toBeInstanceOf(Tool::class);
+});
+
+it('ExecuteBulkActionTool has proper description', function () {
+    $tool = new ExecuteBulkActionTool;
+    $description = (string) $tool->description();
+
+    expect($description)->toContain('bulk action')
+        ->and($description)->toContain('multiple records');
+});
+
+it('ExecuteBulkActionTool has schema with resource, action, and record_ids', function () {
+    $tool = new ExecuteBulkActionTool;
 
     expect(method_exists($tool, 'schema'))->toBeTrue();
 

@@ -7,6 +7,8 @@ return [
     'open_copilot' => 'Open Copilot',
     'close' => 'Close',
     'send' => 'Send',
+    'loading' => 'Loading',
+    'new_line' => 'new line',
     'cancel' => 'Cancel',
     'confirm' => 'Confirm',
     'save' => 'Save',
@@ -72,6 +74,9 @@ return [
     'output_tokens' => 'Output Tokens',
     'total_tokens' => 'Total Tokens',
     'user' => 'User',
+    'model' => 'Model',
+    'id' => 'ID',
+    'name' => 'Name',
     'requests' => 'Requests',
 
     // Rate Limits

@@ -49,6 +49,15 @@ class FilterRecordsTool extends BaseTool
         $limit = min((int) ($request['limit'] ?? 10), 50);
         $query = $modelClass::query();
 
+        // Eager-load relationships and counts from table columns
+        [$relations, $withCounts] = $this->resolveEagerLoads($resourceClass);
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+        if (! empty($withCounts)) {
+            $query->withCount($withCounts);
+        }
+
         foreach ($filters as $field => $condition) {
             if (is_array($condition) && isset($condition['op'], $condition['value'])) {
                 $operator = match ($condition['op']) {
@@ -81,13 +90,7 @@ class FilterRecordsTool extends BaseTool
         $lines = ["Filtered {$resourceClass::getPluralModelLabel()} ({$records->count()} found):", ''];
 
         foreach ($records as $record) {
-            $key = $record->getKey();
-            $attrs = collect($record->toArray())
-                ->take(5)
-                ->filter(fn ($v) => ! is_array($v) && ! is_null($v))
-                ->map(fn ($v, $k) => "{$k}: {$v}")
-                ->implode(', ');
-            $lines[] = "- #{$key}: {$attrs}";
+            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record, $resourceClass);
         }
 
         return implode("\n", $lines);

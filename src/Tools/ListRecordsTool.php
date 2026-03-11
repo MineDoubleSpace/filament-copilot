@@ -48,6 +48,16 @@ class ListRecordsTool extends BaseTool
             $query->forTenant($this->tenant);
         }
 
+        // Eager-load relationships and counts from table columns
+        [$relations, $withCounts] = $this->resolveEagerLoads($resourceClass);
+
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+        if (! empty($withCounts)) {
+            $query->withCount($withCounts);
+        }
+
         $records = $query->paginate($perPage, ['*'], 'page', $page);
 
         $this->audit(AuditAction::RecordRead, $resourceClass, null, [
@@ -66,25 +76,9 @@ class ListRecordsTool extends BaseTool
         ];
 
         foreach ($records as $record) {
-            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record);
+            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record, $resourceClass);
         }
 
         return implode("\n", $lines);
-    }
-
-    protected function summarizeRecord($record): string
-    {
-        $attributes = $record->toArray();
-        $summary = [];
-
-        foreach (array_slice($attributes, 0, 5) as $key => $value) {
-            if (is_array($value) || is_null($value)) {
-                continue;
-            }
-            $display = is_string($value) ? mb_substr((string) $value, 0, 50) : $value;
-            $summary[] = "{$key}: {$display}";
-        }
-
-        return implode(', ', $summary);
     }
 }

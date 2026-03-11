@@ -10,6 +10,7 @@ use EslamRedaDiv\FilamentCopilot\Tools\CreatePlanTool;
 use EslamRedaDiv\FilamentCopilot\Tools\CreateRecordTool;
 use EslamRedaDiv\FilamentCopilot\Tools\DeleteRecordTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ExecuteActionTool;
+use EslamRedaDiv\FilamentCopilot\Tools\ExecuteBulkActionTool;
 use EslamRedaDiv\FilamentCopilot\Tools\ExportConversationTool;
 use EslamRedaDiv\FilamentCopilot\Tools\FillFormTool;
 use EslamRedaDiv\FilamentCopilot\Tools\FilterRecordsTool;
@@ -46,6 +47,7 @@ class ToolRegistry
         FillFormTool::class,
         GetFormDataTool::class,
         ExecuteActionTool::class,
+        ExecuteBulkActionTool::class,
         NavigateToPageTool::class,
         GetCurrentPageTool::class,
         GetWidgetDataTool::class,
@@ -71,7 +73,7 @@ class ToolRegistry
     /**
      * Build all tools configured for a panel/user context.
      */
-    public function buildTools(string $panelId, Model $user, ?Model $tenant = null): array
+    public function buildTools(string $panelId, Model $user, ?Model $tenant = null, ?string $conversationId = null): array
     {
         $tools = [];
 
@@ -84,6 +86,10 @@ class ToolRegistry
                     ->forTenant($tenant);
             }
 
+            if ($conversationId && $tool instanceof CreatePlanTool) {
+                $tool->forConversation($conversationId);
+            }
+
             $tools[] = $tool;
         }
 
@@ -94,6 +100,10 @@ class ToolRegistry
                 $tool->forPanel($panelId)
                     ->forUser($user)
                     ->forTenant($tenant);
+            }
+
+            if ($conversationId && $tool instanceof CreatePlanTool) {
+                $tool->forConversation($conversationId);
             }
 
             $tools[] = $tool;

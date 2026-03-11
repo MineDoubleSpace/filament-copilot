@@ -44,10 +44,20 @@ class SortRecordsTool extends BaseTool
         $direction = in_array($request['direction'], ['asc', 'desc']) ? (string) $request['direction'] : 'asc';
         $limit = min((int) ($request['limit'] ?? 10), 50);
 
-        $records = $modelClass::query()
+        $query = $modelClass::query()
             ->orderBy($column, $direction)
-            ->limit($limit)
-            ->get();
+            ->limit($limit);
+
+        // Eager-load relationships and counts from table columns
+        [$relations, $withCounts] = $this->resolveEagerLoads($resourceClass);
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+        if (! empty($withCounts)) {
+            $query->withCount($withCounts);
+        }
+
+        $records = $query->get();
 
         $this->audit(AuditAction::RecordSorted, $resourceClass, null, [
             'column' => $column,
@@ -61,13 +71,7 @@ class SortRecordsTool extends BaseTool
         $lines = ["{$resourceClass::getPluralModelLabel()} sorted by {$column} ({$direction}), showing {$records->count()}:", ''];
 
         foreach ($records as $record) {
-            $key = $record->getKey();
-            $attrs = collect($record->toArray())
-                ->take(5)
-                ->filter(fn ($v) => ! is_array($v) && ! is_null($v))
-                ->map(fn ($v, $k) => "{$k}: {$v}")
-                ->implode(', ');
-            $lines[] = "- #{$key}: {$attrs}";
+            $lines[] = "- #{$record->getKey()}: ".$this->summarizeRecord($record, $resourceClass);
         }
 
         return implode("\n", $lines);

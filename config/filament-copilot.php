@@ -158,4 +158,14 @@ return [
 
     'system_prompt' => null,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Global Tools
+    |--------------------------------------------------------------------------
+    | Tool classes available on every page across all resources.
+    | Each entry should be a class name that extends BaseTool.
+    */
+
+    'global_tools' => [],
+
 ];

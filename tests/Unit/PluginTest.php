@@ -87,3 +87,59 @@ it('configures authorize callback', function () {
 
     expect($plugin->getAuthorizeUsing())->toBeCallable();
 });
+
+it('configures chat history enabled', function () {
+    $plugin = FilamentCopilotPlugin::make()->chatHistoryEnabled(false);
+
+    expect($plugin->isChatHistoryEnabled())->toBeFalse();
+});
+
+it('configures streaming', function () {
+    $plugin = FilamentCopilotPlugin::make()
+        ->streaming(false)
+        ->streamingChunkSize(50);
+
+    expect($plugin->isStreamingEnabled())->toBeFalse()
+        ->and($plugin->getStreamingChunkSize())->toBe(50);
+});
+
+it('configures export', function () {
+    $plugin = FilamentCopilotPlugin::make()
+        ->exportEnabled()
+        ->exportFormats(['markdown', 'pdf']);
+
+    expect($plugin->isExportEnabled())->toBeTrue()
+        ->and($plugin->getExportFormats())->toBe(['markdown', 'pdf']);
+});
+
+it('configures token budget', function () {
+    $plugin = FilamentCopilotPlugin::make()
+        ->tokenBudgetEnabled()
+        ->dailyTokenBudget(100000)
+        ->monthlyTokenBudget(3000000);
+
+    expect($plugin->isTokenBudgetEnabled())->toBeTrue()
+        ->and($plugin->getDailyTokenBudget())->toBe(100000)
+        ->and($plugin->getMonthlyTokenBudget())->toBe(3000000);
+});
+
+it('configures rate limiting', function () {
+    $plugin = FilamentCopilotPlugin::make()->rateLimitEnabled();
+
+    expect($plugin->isRateLimitEnabled())->toBeTrue();
+});
+
+it('configures memory', function () {
+    $plugin = FilamentCopilotPlugin::make()
+        ->memoryEnabled()
+        ->maxMemoriesPerUser(50);
+
+    expect($plugin->isMemoryEnabled())->toBeTrue()
+        ->and($plugin->getMaxMemoriesPerUser())->toBe(50);
+});
+
+it('configures respect authorization', function () {
+    $plugin = FilamentCopilotPlugin::make()->respectAuthorization(false);
+
+    expect($plugin->shouldRespectAuthorization())->toBeFalse();
+});

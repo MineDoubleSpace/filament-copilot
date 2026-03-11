@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Tools;
 
+use EslamRedaDiv\FilamentCopilot\Concerns\HasCopilotWidgetContext;
 use EslamRedaDiv\FilamentCopilot\Contracts\ProvidesWidgetData;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -14,7 +15,7 @@ class GetWidgetDataTool extends BaseTool
 {
     public function description(): Stringable|string
     {
-        return 'Get data from a dashboard widget that implements ProvidesWidgetData.';
+        return 'Get data from a dashboard widget. Works with widgets that implement ProvidesWidgetData or use the HasCopilotWidgetContext trait.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -35,8 +36,11 @@ class GetWidgetDataTool extends BaseTool
 
         foreach ($panel->getWidgets() as $widgetClass) {
             if (class_basename($widgetClass) === $widgetName || $widgetClass === $widgetName) {
-                if (is_subclass_of($widgetClass, ProvidesWidgetData::class) || in_array(ProvidesWidgetData::class, class_implements($widgetClass) ?: [])) {
-                    /** @var ProvidesWidgetData $widget */
+                $implementsInterface = is_subclass_of($widgetClass, ProvidesWidgetData::class)
+                    || in_array(ProvidesWidgetData::class, class_implements($widgetClass) ?: []);
+                $hasTrait = in_array(HasCopilotWidgetContext::class, class_uses_recursive($widgetClass));
+
+                if ($implementsInterface || $hasTrait) {
                     $widget = app($widgetClass);
                     $data = $widget->copilotWidgetData();
                     $description = $widget->copilotWidgetDescription();
@@ -55,7 +59,7 @@ class GetWidgetDataTool extends BaseTool
                     return implode("\n", $lines);
                 }
 
-                return "Widget '{$widgetName}' does not expose data to Copilot. It needs to implement ProvidesWidgetData.";
+                return "Widget '{$widgetName}' does not expose data to Copilot. Add the HasCopilotWidgetContext trait or implement ProvidesWidgetData.";
             }
         }
 
