@@ -1,10 +1,4 @@
-<div x-data="{
-    sidebarOpen: @entangle('isOpen'),
-}" x-show="sidebarOpen" x-transition:enter="transition ease-out duration-150"
-    x-transition:enter-start="opacity-0 -translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
-    x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 translate-x-0"
-    x-transition:leave-end="opacity-0 -translate-x-4" x-cloak
-    class="absolute inset-0 z-10 bg-white dark:bg-gray-900 flex flex-col">
+<div class="flex flex-col h-full">
     {{-- Sidebar Header --}}
     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <h3 class="font-semibold text-sm text-gray-900 dark:text-white">
@@ -12,12 +6,12 @@
         </h3>
         <div class="flex items-center gap-1">
             <button wire:click="newConversation" type="button"
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 title="{{ __('filament-copilot::filament-copilot.new_conversation') }}">
                 <x-filament::icon icon="heroicon-o-plus" class="w-4 h-4 text-gray-500" />
             </button>
-            <button wire:click="close" type="button"
-                class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <button @click="$dispatch('copilot-close-sidebar')" type="button"
+                class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <x-filament::icon icon="heroicon-o-x-mark" class="w-4 h-4 text-gray-500" />
             </button>
         </div>

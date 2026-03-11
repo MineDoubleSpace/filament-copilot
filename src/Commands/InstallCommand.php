@@ -236,23 +236,6 @@ class InstallCommand extends Command
 
         $this->newLine();
 
-        $this->info('Next steps to complete your setup:');
-
-        $this->newLine();
-
-        $this->line('1️⃣ Register the plugin in your Filament panel provider:');
-        $this->newLine();
-
-        $this->line("use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;");
-        $this->line("");
-        $this->line("public function panel(Panel \$panel): Panel");
-        $this->line("{");
-        $this->line("    return \$panel");
-        $this->line("        ->plugin(FilamentCopilotPlugin::make());");
-        $this->line("}");
-
-        $this->newLine(2);
-
         $this->info('🎉 Filament Copilot installation completed successfully!');
         $this->line('Your AI-powered admin panel is now ready.');
 

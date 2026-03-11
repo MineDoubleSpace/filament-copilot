@@ -40,10 +40,20 @@ class ConversationManager
      */
     public function addUserMessage(CopilotConversation $conversation, string $content): CopilotMessage
     {
-        return $conversation->messages()->create([
+        $message = $conversation->messages()->create([
             'role' => MessageRole::User,
             'content' => $content,
         ]);
+
+        // Auto-generate title from first user message if still default
+        if (config('filament-copilot.chat.title_auto_generate', true)
+            && $conversation->title === 'New Conversation'
+            && $conversation->messages()->where('role', MessageRole::User)->count() === 1
+        ) {
+            $this->updateTitle($conversation, $this->generateTitle($content));
+        }
+
+        return $message;
     }
 
     /**
@@ -118,5 +128,28 @@ class ConversationManager
     public function updateTitle(CopilotConversation $conversation, string $title): void
     {
         $conversation->update(['title' => $title]);
+    }
+
+    /**
+     * Generate a concise title from the first user message.
+     */
+    protected function generateTitle(string $content): string
+    {
+        // Take the first sentence or first 60 chars, whichever is shorter
+        $content = trim($content);
+
+        // Try to get first sentence
+        if (preg_match('/^(.+?[.!?])\s/u', $content, $matches)) {
+            $title = $matches[1];
+        } else {
+            $title = $content;
+        }
+
+        // Truncate to 60 characters max
+        if (mb_strlen($title) > 60) {
+            $title = mb_substr($title, 0, 57).'...';
+        }
+
+        return $title;
     }
 }

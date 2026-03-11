@@ -28,9 +28,9 @@ class NavigateToPageTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $page = $request->get('page');
-        $recordId = $request->get('record_id');
-        $action = $request->get('action') ?? 'list';
+        $page = $request['page'];
+        $recordId = $request['record_id'];
+        $action = $request['action'] ?? 'list';
 
         if (config('filament-copilot.audit.log_navigation', false)) {
             $this->audit(AuditAction::NavigatedTo, null, $recordId, [

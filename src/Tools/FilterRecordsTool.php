@@ -27,10 +27,10 @@ class FilterRecordsTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         if (! $this->authorizeViewAny($resourceClass)) {
@@ -38,14 +38,14 @@ class FilterRecordsTool extends BaseTool
         }
 
         $modelClass = $resourceClass::getModel();
-        $filtersRaw = $request->get('filters');
+        $filtersRaw = $request['filters'];
         $filters = is_string($filtersRaw) ? json_decode($filtersRaw, true) : $filtersRaw;
 
         if (! is_array($filters)) {
             return 'Invalid filters format. Provide a JSON object of field:value pairs.';
         }
 
-        $limit = min((int) ($request->get('limit') ?? 10), 50);
+        $limit = min((int) ($request['limit'] ?? 10), 50);
         $query = $modelClass::query();
 
         foreach ($filters as $field => $condition) {

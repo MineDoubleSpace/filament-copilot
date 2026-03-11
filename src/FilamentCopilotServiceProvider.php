@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot;
 
 use EslamRedaDiv\FilamentCopilot\Commands\InstallCommand;
+use EslamRedaDiv\FilamentCopilot\Livewire\ConversationSidebar;
+use EslamRedaDiv\FilamentCopilot\Livewire\CopilotButton;
+use EslamRedaDiv\FilamentCopilot\Livewire\CopilotChat;
 use EslamRedaDiv\FilamentCopilot\Macros\MacroRegistrar;
 use EslamRedaDiv\FilamentCopilot\Services\ConversationManager;
 use EslamRedaDiv\FilamentCopilot\Services\ExportService;
 use EslamRedaDiv\FilamentCopilot\Services\RateLimitService;
 use EslamRedaDiv\FilamentCopilot\Services\ToolRegistry;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -39,5 +46,16 @@ class FilamentCopilotServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         (new MacroRegistrar)->register();
+
+        FilamentAsset::register([
+            Css::make('filament-copilot', __DIR__ . '/../resources/dist/filament-copilot.css'),
+            Js::make('filament-copilot', __DIR__ . '/../resources/dist/filament-copilot.js'),
+        ], 'eslam-reda-div/filament-copilot');
+
+        if (class_exists(Livewire::class) && $this->app->bound('livewire')) {
+            Livewire::component('filament-copilot-chat', CopilotChat::class);
+            Livewire::component('filament-copilot-button', CopilotButton::class);
+            Livewire::component('filament-copilot-sidebar', ConversationSidebar::class);
+        }
     }
 }

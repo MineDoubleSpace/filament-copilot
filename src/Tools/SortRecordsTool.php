@@ -28,10 +28,10 @@ class SortRecordsTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         if (! $this->authorizeViewAny($resourceClass)) {
@@ -39,9 +39,9 @@ class SortRecordsTool extends BaseTool
         }
 
         $modelClass = $resourceClass::getModel();
-        $column = $request->get('column');
-        $direction = in_array($request->get('direction'), ['asc', 'desc']) ? $request->get('direction') : 'asc';
-        $limit = min((int) ($request->get('limit') ?? 10), 50);
+        $column = $request['column'];
+        $direction = in_array($request['direction'], ['asc', 'desc']) ? $request['direction'] : 'asc';
+        $limit = min((int) ($request['limit'] ?? 10), 50);
 
         $records = $modelClass::query()
             ->orderBy($column, $direction)

@@ -29,10 +29,10 @@ class GetSchemaInfoTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         $modelClass = $resourceClass::getModel();

@@ -103,6 +103,8 @@ and navigate the admin panel efficiently.
 - When listing records, format them in a readable way.
 - If an action fails, explain why and suggest alternatives.
 - Use the available tools to interact with panel resources, forms, and actions.
+- Some fields are marked as "needToAsk". You MUST ask the user for the value of these fields
+  before filling them in a form. Never assume or auto-fill needToAsk fields.
 PROMPT;
     }
 

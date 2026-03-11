@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot\Http\Controllers;
 
 use EslamRedaDiv\FilamentCopilot\Agent\CopilotAgent;
+use EslamRedaDiv\FilamentCopilot\Agent\PlanningEngine;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotMessageSent;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotResponseReceived;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
@@ -105,38 +106,28 @@ class StreamController
                 // Send start event
                 $this->sendSseEvent('start', []);
 
-                $response = $agent->prompt(
+                $streamResponse = $agent->stream(
                     prompt: $lastUserMessage,
                     provider: $provider,
                     model: $model,
                 );
 
-                $responseText = $response->text;
-                $usage = $response->usage;
+                $responseText = '';
+                $usage = null;
 
-                // Stream the response in chunks to simulate real-time delivery
-                $chunkSize = config('filament-copilot.streaming.chunk_size', 20);
-                $words = preg_split('/(\s+)/u', $responseText, -1, PREG_SPLIT_DELIM_CAPTURE);
-                $buffer = '';
-                $wordCount = 0;
-
-                foreach ($words as $word) {
-                    $buffer .= $word;
-                    $wordCount++;
-
-                    if ($wordCount >= $chunkSize) {
-                        $this->sendSseEvent('chunk', ['text' => $buffer]);
-                        $buffer = '';
-                        $wordCount = 0;
-
-                        // Small delay to avoid overwhelming the client
-                        usleep(10000); // 10ms
+                // Stream real-time chunks from the AI provider
+                foreach ($streamResponse as $event) {
+                    if ($event instanceof \Laravel\Ai\Streaming\Events\TextDelta) {
+                        $responseText .= $event->delta;
+                        $this->sendSseEvent('chunk', ['text' => $event->delta]);
+                    } elseif ($event instanceof \Laravel\Ai\Streaming\Events\StreamEnd) {
+                        $usage = $event->usage;
                     }
                 }
 
-                // Send remaining buffer
-                if ($buffer !== '') {
-                    $this->sendSseEvent('chunk', ['text' => $buffer]);
+                // Fallback: get usage from the streamable response if not captured from events
+                if ($usage === null) {
+                    $usage = $streamResponse->usage;
                 }
 
                 // Store the complete message
@@ -172,6 +163,20 @@ class StreamController
                     'input_tokens' => $usage->promptTokens ?? 0,
                     'output_tokens' => $usage->completionTokens ?? 0,
                 ]);
+
+                // Send plan status if there's an active plan
+                $planningEngine = app(PlanningEngine::class);
+                $activePlan = $planningEngine->getActivePlan($conversation);
+
+                if ($activePlan) {
+                    $this->sendSseEvent('plan_status', [
+                        'id' => $activePlan->id,
+                        'status' => $activePlan->status->value,
+                        'current_step' => $activePlan->current_step,
+                        'total_steps' => $activePlan->total_steps,
+                        'steps' => $activePlan->steps,
+                    ]);
+                }
 
                 $this->sendSseEvent('done', []);
             } catch (\Throwable $e) {

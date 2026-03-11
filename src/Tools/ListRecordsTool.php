@@ -27,10 +27,10 @@ class ListRecordsTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         if (! $this->authorizeViewAny($resourceClass)) {
@@ -38,8 +38,8 @@ class ListRecordsTool extends BaseTool
         }
 
         $modelClass = $resourceClass::getModel();
-        $perPage = min((int) ($request->get('per_page') ?? 10), 50);
-        $page = max((int) ($request->get('page') ?? 1), 1);
+        $perPage = min((int) ($request['per_page'] ?? 10), 50);
+        $page = max((int) ($request['page'] ?? 1), 1);
 
         $query = $modelClass::query();
 

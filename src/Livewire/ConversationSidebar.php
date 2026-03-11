@@ -57,6 +57,12 @@ class ConversationSidebar extends Component
         $this->loadConversations();
     }
 
+    #[On('copilot-toggle-sidebar')]
+    public function handleToggle(): void
+    {
+        $this->toggle();
+    }
+
     public function selectConversation(string $conversationId): void
     {
         $this->activeConversationId = $conversationId;

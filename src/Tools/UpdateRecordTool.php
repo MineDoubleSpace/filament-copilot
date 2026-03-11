@@ -27,24 +27,24 @@ class UpdateRecordTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         $modelClass = $resourceClass::getModel();
-        $record = $modelClass::find($request->get('id'));
+        $record = $modelClass::find($request['id']);
 
         if (! $record) {
-            return "Record #{$request->get('id')} not found.";
+            return "Record #{$request['id']} not found.";
         }
 
         if (! $this->authorizeEdit($resourceClass, $record)) {
             return 'You are not authorized to edit this record.';
         }
 
-        $dataRaw = $request->get('data');
+        $dataRaw = $request['data'];
         $data = is_string($dataRaw) ? json_decode($dataRaw, true) : $dataRaw;
 
         if (! is_array($data)) {

@@ -11,6 +11,7 @@ use EslamRedaDiv\FilamentCopilot\Events\CopilotResponseReceived;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotPlan;
 use EslamRedaDiv\FilamentCopilot\Services\ConversationManager;
+use EslamRedaDiv\FilamentCopilot\Services\ExportService;
 use EslamRedaDiv\FilamentCopilot\Services\RateLimitService;
 use EslamRedaDiv\FilamentCopilot\Services\ToolRegistry;
 use Filament\Facades\Filament;
@@ -36,8 +37,6 @@ class CopilotChat extends Component
     public ?array $pendingQuestion = null;
 
     public array $conversations = [];
-
-    public bool $showHistory = false;
 
     public bool $streamingEnabled = false;
 
@@ -182,6 +181,34 @@ class CopilotChat extends Component
             'role' => 'system',
             'content' => __('filament-copilot::filament-copilot.error_occurred').': '.$error,
         ];
+    }
+
+    /**
+     * Called from JavaScript when a plan status update is received via SSE.
+     */
+    #[On('copilot-plan-status')]
+    public function handlePlanStatus(string $id, string $status, int $currentStep, int $totalSteps, ?array $steps = null): void
+    {
+        if ($status === 'proposed') {
+            $this->pendingPlan = [
+                'id' => $id,
+                'description' => '',
+                'steps' => $steps ?? [],
+                'current_step' => $currentStep,
+                'total_steps' => $totalSteps,
+            ];
+        } elseif (in_array($status, ['executing', 'approved'])) {
+            $this->pendingPlan = [
+                'id' => $id,
+                'description' => '',
+                'steps' => $steps ?? [],
+                'current_step' => $currentStep,
+                'total_steps' => $totalSteps,
+                'executing' => true,
+            ];
+        } elseif (in_array($status, ['completed', 'failed', 'rejected'])) {
+            $this->pendingPlan = null;
+        }
     }
 
     protected function processAgentResponse($conversation, $user, string $panelId, $tenant): void
@@ -398,12 +425,7 @@ class CopilotChat extends Component
 
     public function toggleHistory(): void
     {
-        $this->showHistory = ! $this->showHistory;
-
-        if ($this->showHistory) {
-            $this->loadConversations();
-            $this->dispatch('copilot-refresh-sidebar');
-        }
+        $this->dispatch('copilot-toggle-sidebar');
     }
 
     protected function loadConversations(): void
@@ -439,6 +461,27 @@ class CopilotChat extends Component
     {
         $this->message = $prompt;
         $this->sendMessage();
+    }
+
+    public function exportConversation(): \Symfony\Component\HttpFoundation\StreamedResponse|null
+    {
+        if (! $this->conversationId || ! config('filament-copilot.export.enabled', true)) {
+            return null;
+        }
+
+        /** @var ExportService $exportService */
+        $exportService = app(ExportService::class);
+        $markdown = $exportService->toMarkdown($this->conversationId);
+
+        if (! $markdown) {
+            return null;
+        }
+
+        $filename = 'copilot-conversation-'.now()->format('Y-m-d-His').'.md';
+
+        return response()->streamDownload(function () use ($markdown) {
+            echo $markdown;
+        }, $filename, ['Content-Type' => 'text/markdown']);
     }
 
     public function render()

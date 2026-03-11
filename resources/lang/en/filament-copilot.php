@@ -25,6 +25,7 @@ return [
     'no_conversations' => 'No conversations yet.',
     'untitled' => 'Untitled Conversation',
     'confirm_delete' => 'Are you sure you want to delete this conversation?',
+    'export' => 'Export Conversation',
 
     // Messages
     'rate_limit_exceeded' => 'You have exceeded the rate limit. Please try again later.',
@@ -32,6 +33,7 @@ return [
 
     // Plans
     'plan_proposed' => 'A plan has been proposed:',
+    'plan_executing' => 'Plan is executing...',
     'approve' => 'Approve',
     'reject' => 'Reject',
 

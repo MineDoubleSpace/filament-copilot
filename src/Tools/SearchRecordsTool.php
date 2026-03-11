@@ -27,10 +27,10 @@ class SearchRecordsTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
         if (! $this->authorizeViewAny($resourceClass)) {
@@ -38,8 +38,8 @@ class SearchRecordsTool extends BaseTool
         }
 
         $modelClass = $resourceClass::getModel();
-        $searchTerm = $request->get('query');
-        $limit = min((int) ($request->get('limit') ?? 10), 50);
+        $searchTerm = $request['query'];
+        $limit = min((int) ($request['limit'] ?? 10), 50);
 
         $query = $modelClass::query();
 

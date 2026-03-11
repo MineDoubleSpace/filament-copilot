@@ -28,14 +28,14 @@ class ExecuteActionTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $resourceClass = $this->resolveResource($request->get('resource'));
+        $resourceClass = $this->resolveResource($request['resource']);
 
         if (! $resourceClass) {
-            return "Resource '{$request->get('resource')}' not found.";
+            return "Resource '{$request['resource']}' not found.";
         }
 
-        $actionName = $request->get('action');
-        $recordId = $request->get('record_id');
+        $actionName = $request['action'];
+        $recordId = $request['record_id'];
 
         $this->audit(AuditAction::ActionExecuted, $resourceClass, $recordId, [
             'action' => $actionName,

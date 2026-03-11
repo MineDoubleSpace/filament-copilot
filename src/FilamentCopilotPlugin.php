@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot;
 
 use Closure;
-use EslamRedaDiv\FilamentCopilot\Livewire\ConversationSidebar;
-use EslamRedaDiv\FilamentCopilot\Livewire\CopilotButton;
-use EslamRedaDiv\FilamentCopilot\Livewire\CopilotChat;
 use EslamRedaDiv\FilamentCopilot\Pages\CopilotDashboardPage;
 use EslamRedaDiv\FilamentCopilot\Resources\CopilotAuditLogs\CopilotAuditLogResource;
 use EslamRedaDiv\FilamentCopilot\Resources\CopilotConversations\CopilotConversationResource;
@@ -17,7 +14,6 @@ use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
-use Livewire\Livewire;
 
 class FilamentCopilotPlugin implements Plugin
 {
@@ -264,10 +260,6 @@ class FilamentCopilotPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        Livewire::component('filament-copilot-chat', CopilotChat::class);
-        Livewire::component('filament-copilot-button', CopilotButton::class);
-        Livewire::component('filament-copilot-sidebar', ConversationSidebar::class);
-
         if ($this->isChatEnabled()) {
             FilamentView::registerRenderHook(
                 PanelsRenderHook::BODY_END,

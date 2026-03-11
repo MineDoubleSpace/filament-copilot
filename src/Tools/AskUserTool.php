@@ -27,9 +27,9 @@ class AskUserTool extends BaseTool
 
     public function handle(Request $request): Stringable|string
     {
-        $question = $request->get('question');
-        $options = $request->get('options');
-        $context = $request->get('context');
+        $question = $request['question'];
+        $options = $request['options'];
+        $context = $request['context'];
 
         $this->audit(AuditAction::ActionExecuted, null, null, [
             'tool' => 'ask_user',

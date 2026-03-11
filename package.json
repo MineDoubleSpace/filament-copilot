@@ -1,0 +1,11 @@
+{
+  "name": "filament-copilot",
+  "private": true,
+  "scripts": {
+    "build": "npx @tailwindcss/cli -i resources/css/index.css -o resources/dist/filament-copilot.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0",
+    "@tailwindcss/typography": "^0.5"
+  }
+}

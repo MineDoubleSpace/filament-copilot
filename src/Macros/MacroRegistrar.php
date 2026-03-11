@@ -21,6 +21,9 @@ class MacroRegistrar
 
     protected static array $componentNeedToAsk = [];
 
+    /** @var array<string> Field names globally tracked with needToAsk=true */
+    protected static array $needToAskFieldNames = [];
+
     public function register(): void
     {
         if (class_exists(SchemaComponent::class)) {
@@ -376,6 +379,14 @@ class MacroRegistrar
         }
 
         static::$componentNeedToAsk[$id][$type->value] = $needToAsk;
+
+        // Track the field name globally when needToAsk is true
+        if ($needToAsk && method_exists($component, 'getName')) {
+            $name = $component->getName();
+            if ($name && ! in_array($name, static::$needToAskFieldNames, true)) {
+                static::$needToAskFieldNames[] = $name;
+            }
+        }
     }
 
     /**
@@ -407,5 +418,13 @@ class MacroRegistrar
     public static function getNeedToAskFlags(object $component): array
     {
         return static::$componentNeedToAsk[spl_object_id($component)] ?? [];
+    }
+
+    /**
+     * Get all globally tracked field names that have needToAsk=true.
+     */
+    public static function getTrackedNeedToAskFieldNames(): array
+    {
+        return static::$needToAskFieldNames;
     }
 }
